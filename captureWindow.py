@@ -1,4 +1,4 @@
-from qt_util import *
+from curveCreator.qt_util import *
 import tempfile, os
 from maya import cmds, OpenMaya, OpenMayaUI, mel
 

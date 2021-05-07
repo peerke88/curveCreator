@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from qt_util import *
+from curveCreator.qt_util import *
 from maya import cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin, MayaQDockWidget
 

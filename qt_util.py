@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 QT_VERSION = "none"
 ERROR_LIST = {}
+from curveCreator.py23 import *
+import re
 
 try:
     from PySide.QtGui import *
@@ -81,3 +83,180 @@ def get_maya_window():
         except:
             pass
     return None
+
+
+def nullLayout(inType, parent=None, size=0):
+    v = inType()
+    v.setContentsMargins(size, size, size, size)
+    return v
+
+
+def QuickDialog(title):
+    """ convenience Quick dialog for simple accept and reject functions
+    
+    :param title: title for the dialog
+    :type title: string
+    :return: the window to be created
+    :rtype: QDialog
+    """
+    myWindow = QDialog()
+    myWindow.setWindowTitle(title)
+    myWindow.setLayout(nullVBoxLayout())
+    h = nullHBoxLayout()
+    myWindow.layout().addLayout(h)
+    btn = pushButton("Accept")
+    btn.clicked.connect(myWindow.accept)
+    h.addWidget(btn)
+    btn = pushButton("Reject")
+    btn.clicked.connect(myWindow.reject)
+    h.addWidget(btn)
+    return myWindow
+
+def pushButton(text=''):
+    """ simple button command with correct stylesheet
+    
+    :param text: text to add to the button
+    :type text: string
+    :return: the button  
+    :rtype: QPushButton
+    """
+    btn = QPushButton(text)
+    btn.setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #595959, stop:1 #444444);")
+    return btn
+
+def buttonsToAttach(name, command, *_):
+    """ convenience function to attach signal command to qpushbutton on creation
+    
+    :param name: text to add to the button
+    :type name: string
+    :param command: python command to attach to the current button on clicked signal
+    :type command: <function>
+    :return: the button  
+    :rtype: QPushButton
+    """
+    button = pushButton()
+
+    button.setText(name)
+    button.setObjectName(name)
+
+    button.clicked.connect(command)
+    button.setMinimumHeight(23)
+    return button
+
+
+def svgButton(name='', pixmap='', size=None, toolTipInfo = None):
+    """ toolbutton function with image from svg file
+    
+    :param name: text to add to the button
+    :type name: string
+    :param pixmap: location of the svg file
+    :type pixmap: string
+    :param size: height and width of image in pixels
+    :type size: int
+    :return: the button  
+    :rtype: QPushButton
+    """
+    btn = QPushButton(name.lower())
+    btn.setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #595959, stop:1 #444444);")
+    if name != '':
+        btn.setLayoutDirection(Qt.LeftToRight)
+        btn.setStyleSheet("QPushButton { text-align: left; background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #595959, stop:1 #444444); }")
+    _empty = False
+    if isinstance(pixmap, str):
+        if "empty" in pixmap.lower():
+            _empty = True
+        pixmap = QPixmap(pixmap)
+    btn.setIcon(QIcon(pixmap))
+    btn.setFocusPolicy(Qt.NoFocus)
+    if not toolTipInfo is None:
+        btn.setWhatsThis(toolTipInfo)
+
+    if size is not None:
+        _size = QSize(size, size)
+        btn.setIconSize(_size)
+    return btn
+
+
+def toolButton(pixmap='', orientation=0, size=None):
+    """ toolbutton function with image
+    
+    :param pixmap: location of the image
+    :type pixmap: string
+    :param orientation: rotation in degrees clockwise
+    :type orientation: int
+    :param size: height and width of image in pixels
+    :type size: int
+    :return: the button  
+    :rtype: QToolButton
+    """
+    btn = QToolButton()
+    if isinstance(pixmap, str):
+        pixmap = QPixmap(pixmap)
+    if orientation != 0 and not _isSVG:
+        transform = QTransform().rotate(orientation, Qt.ZAxis)
+        pixmap = pixmap.transformed(transform, Qt.SmoothTransformation)
+    btn.setIcon(QIcon(pixmap))
+    btn.setFocusPolicy(Qt.NoFocus)
+    btn.setStyleSheet('border: 0px;')
+    if size is not None:
+        if type(size) == int:
+            btn.setFixedSize(QSize(size, size))
+            btn.setIconSize(QSize(size, size))
+        else:
+            btn.setFixedSize(size)
+            btn.setIconSize(size)
+    return btn
+
+
+def FalseFolderCharacters(inString):
+    """ checking a string for characters that are not allowed in folder structures
+
+    :param inString: the string to check
+    :type inString: string
+    :return: if the string has bad characters
+    :rtype: bool
+    """
+    return re.search(r'[\\/:\[\]<>"!@#$%^&-.]', inString) or re.search(r'[*?|]', inString) or re.match(r'[0-9]', inString) or re.search(u'[\u4E00-\u9FFF]+', inString, re.U) or re.search(u'[\u3040-\u309Fー]+', inString, re.U) or re.search(u'[\u30A0-\u30FF]+', inString, re.U)
+
+
+def FalseFolderCharactersJapanese(self, inString):
+    """ checking a string for characters that are not allowed in folder structures
+
+    :param inString: the string to check
+    :type inString: string
+    :return: if the string has bad characters
+    :rtype: bool
+    """
+    return re.search(r'[\\/:\[\]<>"!@#$%^&-]', inString) or re.search(r'[*?|]', inString) or "." in inString or (len(inString) > 0 and inString[0].isdigit()) or re.search(u'[\u4E00-\u9FFF]+', inString, re.U) or re.search(u'[\u3040-\u309Fー]+', inString, re.U) or re.search(u'[\u30A0-\u30FF]+', inString, re.U)
+
+class LineEdit(QLineEdit):
+    """override the focus steal on the lineedit"""
+    allowText = pyqtSignal(bool)
+
+    def __init__(self, *args, folderSpecific = True):
+        super(LineEdit, self).__init__(*args)
+        self.__qt_normal_color = QPalette(self.palette()).color(QPalette.Base)
+
+        if folderSpecific:
+            self.textChanged[unicode].connect(self._checkString)
+        
+    def __lineEdit_Color(self, inColor):
+        PalleteColor = QPalette(self.palette())
+        PalleteColor.setColor(QPalette.Base, QColor(inColor))
+        self.setPalette(PalleteColor)
+
+    def _checkString(self):
+        _curText = self.displayText()
+        if FalseFolderCharacters(_curText) != None:
+            self.__lineEdit_Color('red')
+            self.allowText.emit(False)
+        else:
+            self.__lineEdit_Color(self.__qt_normal_color)
+            self.allowText.emit(True)
+
+    def keyPressEvent(self, event):
+        key = event.key()
+        if key == Qt.Key.Key_Control or key == Qt.Key.Key_Shift:
+            return
+        else:
+            super(self.__class__, self).keyPressEvent(event)
