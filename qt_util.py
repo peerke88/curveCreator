@@ -260,3 +260,26 @@ class LineEdit(QLineEdit):
             return
         else:
             super(self.__class__, self).keyPressEvent(event)
+
+
+class ColorPicker(QColorDialog):
+    def __init__(self, *args):
+        super(ColorPicker, self).__init__(*args)
+        widgets = self.findChildren(QWidget)
+
+        mainLayout = self.layout()
+        hboxLayout = nullLayout(QHBoxLayout, None, 0)
+        mainLayout.insertLayout(0, hboxLayout)
+        vboxLayout = nullLayout(QVBoxLayout, None, 0)
+        hboxLayout.addLayout(vboxLayout)
+        vboxLayout.addWidget(widgets[9])
+        vboxLayout.addWidget(widgets[2])
+        hboxLayout.addWidget(widgets[7])
+
+        widgets[0].hide()
+        widgets[1].hide()
+        widgets[3].hide()
+
+        widgets[4].hide()
+        widgets[5].hide()
+        widgets[6].hide()

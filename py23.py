@@ -33,9 +33,9 @@ if sys.version_info.major == 2:
     # Override range with xrange to mimic python3's range
     range = xrange
 else:
-	unicode = str
-	long = int
-	from importlib import reload
+    unicode = str
+    long = int
+    from importlib import reload
 
 try:
     from typing import *

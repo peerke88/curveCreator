@@ -3,34 +3,33 @@ import tempfile, os
 from maya import cmds, OpenMaya, OpenMayaUI, mel
 
 class CaptureWindow(QDialog):
-    def __init__(self, parent=None, name='test'):
+    def __init__(self, parent=None, path='test'):
         super(CaptureWindow, self).__init__(parent)
 
         self.setLayout(QVBoxLayout())
 
-        self.SaveAndCloseButton = QPushButton("SaveAndCloseButton")
-        self.verticalLayoutWidget_2 = QWidget(self)
-        self.verticalLayoutWidget_2.setGeometry(QRect(10, 10, 191, 201))
-        self.verticalLayoutWidget_2.setObjectName("verticalLayoutWidget_2")
-        self.layout().addWidget(self.verticalLayoutWidget_2)
+        self.SaveAndCloseButton = QPushButton("Save And Close")
+        self.vertLayoutWidget = QWidget(self)
+        self.vertLayoutWidget.setGeometry(QRect(10, 10, 191, 201))
+        self.vertLayoutWidget.setObjectName("vertLayoutWidget")
+        self.layout().addWidget(self.vertLayoutWidget)
         self.layout().addWidget(self.SaveAndCloseButton)
 
-        self.viewportLayout = QVBoxLayout(self.verticalLayoutWidget_2)
+        self.viewportLayout = QVBoxLayout(self.vertLayoutWidget)
         self.viewportLayout.setContentsMargins(0, 0, 0, 0)
 
         self.__itemCreated = False
-        self.name = name
+        self.path = path
         self.cameraName = ''
 
         self.__addViewport()
         self.SaveAndCloseButton.clicked.connect(self.__saveAndClose)
-        self.SaveAndCloseButton.setText("saveAndClose")
-
+        
     def __addViewport(self):
         self.cameraName = cmds.camera()[0]
         cmds.hide(self.cameraName)
 
-        self.modelPanelName = cmds.modelEditor(camera=self.cameraName, displayAppearance='smoothShaded', dtx=1, hud=0, alo=0, pm=1, grid=0)
+        self.modelPanelName = cmds.modelEditor(camera=self.cameraName, displayAppearance='smoothShaded', dtx=0, hud=0, alo=0, nc=1, grid=0)
 
         ptr = OpenMayaUI.MQtUtil.findControl(self.modelPanelName)
         self.modelEditor = wrapinstance(long(ptr))
@@ -39,8 +38,11 @@ class CaptureWindow(QDialog):
         cmds.viewFit(self.cameraName, all=True)
 
     def createSnapshot(self):
-        filePath  = os.path.join(tempfile.tempdir,'screenshot.jpg')
-        QPixmap.grabWindow(self.modelEditor.winId()).save(filePath, 'jpg')
+        filePath  = os.path.join(tempfile.gettempdir(),'screenshot.png')
+        if os.path.isdir(os.path.dirname(self.path)):
+            filePath = self.path
+        print(filePath)
+        QPixmap.grabWindow(self.modelEditor.winId()).save(filePath)
         self.__itemCreated =  filePath
         return filePath
 
