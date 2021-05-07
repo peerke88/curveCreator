@@ -9,7 +9,7 @@ from curveCreator import mayaWidget
 from curveCreator import captureWindow
 from curveCreator import mayaUtils
 
-__VERSION__ = "3.0.20210506"
+__VERSION__ = "3.0.20210507"
 _DIR = os.path.dirname(__file__) 
 _CURVES = os.path.join(_DIR, 'Curves')
 
@@ -37,20 +37,12 @@ class ControlUI(mayaWidget.DockWidget):
         self.__loadControllers()
 
         self.loadUIState()
-        self.recurseMouseTracking(self, True)
 
     def __defaults(self):
         """ some default local variables for the current UI    
         """
         self.textInfo = {}
         mayaUtils.setToolTips(True)
-        self._timer = QTimer()
-        self._timer.timeout.connect(self._displayToolTip)
-        self.currentWidgetAtMouse = None
-        self.toolTipWindow = None
-        self.__timing = 700
-        self.__dialogGeo = {}
-
         self.colorList = mayaUtils.INDEXCOLORS
 
     def __uiElements(self):
@@ -67,12 +59,11 @@ class ControlUI(mayaWidget.DockWidget):
         """
         self.menuBar = QMenuBar(self)
         self.menuBar.setLayoutDirection(Qt.RightToLeft)
-        helpAction = QMenu('', self)
+        helpAction = QAction('', self)
         helpAction.setIcon(QIcon(":/QR_help.png"))
 
         self.textInfo["docAction"] = QAction("UI documentation", self)
-        self.textInfo["tooltipAction"] = QAction("Enhanced ToolTip", self)
-        self.textInfo["tooltipAction"].setCheckable(True)
+        
 
         self.changeLN = QMenu("en", self)
         languageFiles = os.listdir(os.path.join(_DIR, "languages"))
@@ -81,13 +72,9 @@ class ControlUI(mayaWidget.DockWidget):
             self.changeLN.addAction(ac)
             ac.triggered.connect(self._changeLanguage)
 
-        for act in [self.textInfo["docAction"], self.textInfo["tooltipAction"]]:
-            helpAction.addAction(act)
-
-        self.textInfo["docAction"].triggered.connect(self._openDocHelp)
-        self.textInfo["tooltipAction"].triggered.connect(self._tooltipsCheck)
-
-        self.menuBar.addMenu(helpAction)
+        helpAction.triggered.connect(self._openDocHelp)
+        
+        self.menuBar.addAction(helpAction)
         self.menuBar.addMenu(self.changeLN)
         self.layout().setMenuBar(self.menuBar)
 
@@ -309,118 +296,6 @@ class ControlUI(mayaWidget.DockWidget):
             mayaUtils.createTextController(str(InputText),str(FontType))
 
 
-    # -------------------- tool tips -------------------------------------
-
-    def enterEvent(self, event):
-        """ the event at which to reload both the skinsliders and the component editor
-
-        :param event: the event that is triggerd
-        :type event: QEvent
-        :return: the output of the inherited functions
-        :rtype: superclass
-        """
-        self._callbackFilter()
-        return super(ControlUI, self).enterEvent(event)
-
-    def recurseMouseTracking(self, parent, flag):
-        """ convenience function to add mousetracking to all elements that are part of the current tool this way we can attach tooltips to everything
-
-        :param parent: the parent object that can hold moustracking events and from which to search all possible children in the hierarchy
-        :type parent: Qwidget
-        :param flag: if `True` turns mouse tracking on, if `False` turns mousetracking off
-        :type flag: bool
-        """
-        if hasattr(parent, "mouseMoveEvent"):
-            parent.setMouseTracking(flag)
-            parent.__mouseMoveEvent = parent.mouseMoveEvent
-            parent.mouseMoveEvent = partial(self.childMouseMoveEvent, parent)
-
-        for child in parent.children():
-            self.recurseMouseTracking(child, flag)
-
-    def _mouseTracking(self, event):
-        """ the event at which to display the tooltip windows
-
-        :param event: the event that is triggerd
-        :type event: QEvent
-        """
-        if QT_VERSION == "pyside2":
-            point = QPoint(event.screenPos().x(), event.screenPos().y())
-        else:
-            point = QPoint(event.globalPos().x(), event.globalPos().y())
-        curWidget = widgetsAt(point)
-        
-        def _removeTT():
-            if self.toolTipWindow is not None:
-                self.toolTipWindow.hide()
-                self.toolTipWindow.deleteLater()
-            self.toolTipWindow = None
-            self._timer.stop()
-
-        if curWidget == None and self.toolTipWindow is not None:
-            _removeTT()
-        if self.currentWidgetAtMouse != curWidget:
-            if self.toolTipWindow is not None:
-                _removeTT()
-
-            if not isinstance(curWidget, QWidget):  # <- add multiple checks if more implemented then just buttons
-                _removeTT()
-                self.currentWidgetAtMouse = None
-                return
-
-            self.currentWidgetAtMouse = curWidget
-            self._timer.start(self.__timing)
-
-    def childMouseMoveEvent(self, child, event):
-        """ the overloaded function to track mouse movements on children
-
-        :param child: the child object at which to set mouse tracking
-        :type child: QWidget
-        :param event: the event that is triggerd
-        :type event: QEvent
-        """
-        self._mouseTracking(event)
-        return child.__mouseMoveEvent(event)
-
-    def mouseMoveEvent(self, event):
-        """ the move event
-
-        :param event: the event that is triggerd
-        :type event: QEvent
-        """
-        self._mouseTracking(event)
-        super(ControlUI, self).mouseMoveEvent(event)
-
-    def _displayToolTip(self):
-        """ the tooltip function, allows the tooltip to spawn a seperate window above the current object
-        the tooltip wil spawn based on a timer and will remove itself when the cursor moves away
-        :note: tooltips are currently disabled as there are no images to show or text to display
-        """
-        self._timer.stop()
-        tip = self.currentWidgetAtMouse.whatsThis()
-
-        if (self.currentWidgetAtMouse is None) or (self.textInfo["tooltipAction"].isChecked() == False):
-            if str(tip) in self._tooltips.keys():
-                self.currentWidgetAtMouse.setToolTip(self._tooltips[tip])
-            return
-        
-        if not str(tip) in self._tooltips.keys():
-            return
-
-        size = 250
-        if QDesktopWidget().screenGeometry().height() > 1080:
-            size *= 1.5
-        rect = QRect(QCursor.pos().x() + 20, QCursor.pos().y() - (40 + size), size, size)
-        if (self.window().pos().y() + (self.height() / 2)) > QCursor.pos().y():
-            rect = QRect(QCursor.pos().x() + 20, QCursor.pos().y() + 20, size, size)
-
-        self.toolTipWindow = AdvancedToolTip(rect)
-        self.toolTipWindow.setTip(self._tooltips[str(tip)].replace("^", "\n"))
-        self.toolTipWindow.setGifImage(tip)
-        self.toolTipWindow.show()
-
-    # -------------------- window states -------------------------------
-
     def saveUIState(self):
         """ save the current state of the ui in a seperate ini file, this should also hold information later from a seperate settings window
 
@@ -430,7 +305,6 @@ class ControlUI(mayaWidget.DockWidget):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("tabs", self.colorTab.currentIndex())
         self.settings.setValue("language", self.changeLN.title())
-        self.settings.setValue("toolTips", self.textInfo["tooltipAction"].isChecked())
         
     def loadUIState(self):
         """ load the previous set information from the ini file where possible, if the ini file is not there it will start with default settings
@@ -446,21 +320,12 @@ class ControlUI(mayaWidget.DockWidget):
         self.colorTab.setCurrentIndex(_tab)
 
         self._changeLanguage(self.settings.value("language","en"))
-
-        _toolTipSetting = self.settings.value("toolTips", False)
-
-        if _toolTipSetting in [False, "false", "False"]:
-            _toolTipSetting = False
-        self.textInfo["tooltipAction"].setChecked(bool(_toolTipSetting))
         
     def hideEvent(self, event):
         """ the hide event is something that is triggered at the same time as close,
         sometimes the close event is not handled correctly by maya so we add the save state in here to make sure its always triggered
         :note: its only storing info so it doesnt break anything
         """
-        if not self.toolTipWindow is None:
-            self.toolTipWindow.hide()
-            self.toolTipWindow.deleteLater()
         self.saveUIState()
         
         super(ControlUI, self).hideEvent(event)

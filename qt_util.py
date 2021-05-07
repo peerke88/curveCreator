@@ -207,7 +207,18 @@ def toolButton(pixmap='', orientation=0, size=None):
             btn.setIconSize(size)
     return btn
 
+def widgetsAt(pos):
+    """ Qt convenience function to get the widget at given screen position
 
+    :param pos: the position on screen
+    :type pos: QPos 
+    :return: widget on the position given
+    :rtype: QWidget
+    """
+    widgets = []
+    widget_at = QApplication.widgetAt(pos)
+    return widget_at
+    
 def FalseFolderCharacters(inString):
     """ checking a string for characters that are not allowed in folder structures
 
