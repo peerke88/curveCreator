@@ -50,7 +50,7 @@ if os.path.isdir(baseFolder):
 os.mkdir(baseFolder)
 
 toMove = []
-_exclude = ["pyc", "ai", "sh", "bat", "user", "cmake", "inl", "ini", "pro", "pri", "txt", "h", "cpp", "hpp", "dll", "zip", "mel", "png", "docx", "JPG", "gif"]
+_exclude = ["pyc", "ai", "sh", "bat", "user", "cmake", "inl", "ini", "pro", "pri", "txt", "h", "cpp", "hpp", "dll", "zip", "mel", "docx", "JPG", "gif"]
 _noFile = ["packageCreator.py"]
 for dirName, __, fList in os.walk(curFolder):
 	for file in fList:
