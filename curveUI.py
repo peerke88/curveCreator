@@ -1,7 +1,7 @@
 from curveCreator.py23 import *
 from curveCreator.qt_util import *
 
-import os, re, stat, shutil, platform, logging, tempfile, glob, warnings
+import os, re, stat, shutil, platform, logging, tempfile, glob, warnings, webbrowser
 from functools import partial
 from maya import cmds
 
@@ -242,7 +242,17 @@ class ControlUI(mayaWidget.DockWidget):
         mayaUtils.setRgbColor(r, g, b, f)
         
     def _openDocHelp(self):
-        pass
+        
+        _helpFile = os.path.join(_DIR, "languages/{}/helpDoc.pdf".format(self.changeLN.title()))
+        try:
+            os.startfile( r'file:%s'%_helpFile )  
+        except:
+            try:
+                warnings.warn("could not open Pdf file, trying through webrowser!")
+                webbrowser.open_new( r'file:%s'%_helpFile )  
+            except Exception as e:
+                warnings.warn(e)
+
     
     def __imageCreationWindow(self, *args):
         selection = mayaUtils.getSelection()

@@ -1,6 +1,6 @@
 # curveCreator
 
-refactor of the original skinning tools
+refactor of the original Curve tools
 https://gumroad.com/l/WRtX
 
 main goal of the tools is to make clean code that is ready for Python 3
