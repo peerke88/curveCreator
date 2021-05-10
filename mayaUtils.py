@@ -1,5 +1,5 @@
 from maya import cmds, mel
-import os, tempfile, stat
+import os, tempfile, stat, sys, traceback, warnings
 from functools import wraps
 
 MAYAVERSION = int(str(cmds.about(apiVersion=True))[:-2])
@@ -36,7 +36,12 @@ def dec_undo(func):
                 print(e)
                 print(e.__class__)
                 print(sys.exc_info())
-                cmds.warning(traceback.format_exc())
+                warnings.warn(traceback.format_exc())
+            else:
+                if "Failed to create the text with the specified font" in traceback.format_exc():
+                    cmds.warning("Maya does not support creation of (some of) the characters for this font")
+                else:
+                    cmds.warning(e)
         finally:
             cmds.undoInfo(cck=True)
             
@@ -138,6 +143,20 @@ def __fileWriteOrAdd(inFileName, inText, inWriteOption):
     file = open(inFileName, inWriteOption)
     file.write(inText)
     file.close()
+
+def getMayaFonts():
+    fontList = []
+    fonts = cmds.fontDialog(FontList=True)
+    for i in fonts:    
+        removed = i.split('-')
+        fontList.append(removed[0])
+
+    return _RemoveDuplicates(fontList)
+
+def _RemoveDuplicates( seq): 
+    noDuplicates = []
+    [noDuplicates.append(i) for i in seq if not noDuplicates.count(i)]
+    return noDuplicates
 
 def GetControler(inputCurve, curveDirectory, isChecked):
     cmds.delete(inputCurve, ch=True)

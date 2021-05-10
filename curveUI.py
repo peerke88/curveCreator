@@ -203,10 +203,13 @@ class ControlUI(mayaWidget.DockWidget):
         textLay = nullLayout(QVBoxLayout, None, 0)
         self.textInfo["textInput"] = LineEdit(folderSpecific = False)
         self.textInfo["textInput"].setPlaceholderText("Create text Controller...")
-        combo = QFontComboBox()
-        combo.setCurrentFont(QFont("Arial"))
-        self.textInfo["textBtn"] = buttonsToAttach("Create Text", partial(self.__createText, self.textInfo["textInput"], combo))
-        for btn in [self.textInfo["textInput"], combo, self.textInfo["textBtn"]]:
+        self.fontCombo = QFontComboBox()
+        self.fontCombo.setCurrentFont(QFont("Arial"))
+        # allFonts = mayaUtils.getMayaFonts()
+        # self.fontCombo.addItems(allFonts)
+        # self.fontCombo.setCurrentIndex(allFonts.index("Arial "))
+        self.textInfo["textBtn"] = buttonsToAttach("Create Text", partial(self.__createText, self.textInfo["textInput"]))
+        for btn in [self.textInfo["textInput"], self.fontCombo, self.textInfo["textBtn"]]:
             textLay.addWidget(btn)
         self.textInfo["textGB"].setLayout(textLay)
 
@@ -338,11 +341,11 @@ class ControlUI(mayaWidget.DockWidget):
             
         self.__readOutFiles()
 
-    def __createText(self, textEdit, fontBox):
+    def __createText(self, textEdit):
         InputText = textEdit.text()
-        FontType  = fontBox.currentText()
+        FontType  = self.fontCombo.currentText()
         if str(InputText) == "":
-            raise InputError("no text given!")
+            raise ValueError("no text given!")
         else:
             mayaUtils.createTextController(str(InputText),str(FontType))
 
@@ -356,6 +359,9 @@ class ControlUI(mayaWidget.DockWidget):
         self.settings.setValue("geometry", self.saveGeometry())
         self.settings.setValue("tabs", self.colorTab.currentIndex())
         self.settings.setValue("language", self.changeLN.title())
+        self.settings.setValue("font", self.fontCombo.currentIndex())
+
+
         
     def loadUIState(self):
         """ load the previous set information from the ini file where possible, if the ini file is not there it will start with default settings
@@ -371,6 +377,8 @@ class ControlUI(mayaWidget.DockWidget):
         self.colorTab.setCurrentIndex(_tab)
 
         self._changeLanguage(self.settings.value("language","en"))
+        # arialIndex = mayaUtils.getMayaFonts().index("Arial ")
+        self.fontCombo.setCurrentIndex(self.settings.value("font", 0))
         
     def hideEvent(self, event):
         """ the hide event is something that is triggered at the same time as close,
@@ -379,7 +387,8 @@ class ControlUI(mayaWidget.DockWidget):
         """
         self.saveUIState()
         
-        super(ControlUI, self).hideEvent(event)
+        if not event is None:
+            super(ControlUI, self).hideEvent(event)
 
     def closeEvent(self, event):
         """ the close event, 
