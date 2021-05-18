@@ -11,7 +11,7 @@ CURRENTFOLDER = os.path.dirname(__file__)
 from curveCreator.qt_util import *
 from maya import cmds
 
-__VERSION__ = "3.0.20210515"
+__VERSION__ = "3.0.20210518"
 
 class InstallWindow(QDialog):
     def __init__(self, scriptDir, parent = None):

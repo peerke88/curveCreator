@@ -1,11 +1,24 @@
 from maya import cmds, mel
-import os, tempfile, stat, sys, traceback, warnings
+import os, tempfile, stat, sys, traceback, warnings, platform
 from functools import wraps
 
 
+def getPluginSuffix():
+    """ get the current plugin suffix based on the os that we are running
+    
+    :return: suffix for plugin files specific to a particular os
+    :rtype: string
+    """
+    pluginSuffix = ".mll"
+    if platform.system() == "Darwin":
+        pluginSuffix = ".bundle"
+    if platform.system() == "Linux":
+        pluginSuffix = ".bundle"
+    return pluginSuffix
+
 MAYAVERSION = int(str(cmds.about(apiVersion=True))[:-2])
 if MAYAVERSION > 2016:
-    cmds.loadPlugin("Type.mll", qt=1)
+    cmds.loadPlugin("Type{}".format(getPluginSuffix()), qt=1)
 
 _DEBUG = True
 INDEXCOLORS = [[0.38, 0.38, 0.38], [0.0, 0.0, 0.0],   [0.75, 0.75, 0.75],
