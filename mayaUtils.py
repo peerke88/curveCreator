@@ -2,7 +2,11 @@ from maya import cmds, mel
 import os, tempfile, stat, sys, traceback, warnings
 from functools import wraps
 
+
 MAYAVERSION = int(str(cmds.about(apiVersion=True))[:-2])
+if MAYAVERSION > 2016:
+    cmds.loadPlugin("Type.mll", qt=1)
+
 _DEBUG = True
 INDEXCOLORS = [[0.38, 0.38, 0.38], [0.0, 0.0, 0.0],   [0.75, 0.75, 0.75],
               [0.5, 0.5, 0.5],    [0.8, 0.0, 0.2],   [0.0, 0.0, 0.4],
@@ -52,24 +56,30 @@ def setToolTips(inBool):
 
 @dec_undo
 def createTextController(inText, inFont):
-    createdText = cmds.textCurves( f=inFont, t=inText )
-    allDescendants = cmds.listRelatives( createdText[0], ad=True)
     shapeList = []
-    for desc in allDescendants:
-        if 'curve' in desc and 'Shape' not in desc:
-            shapeList.append(desc)
+    if MAYAVERSION > 2016:
+        shapeList = createTypeToolWithNode("textCurve",  font=inFont, style=None, text=inText)
+        createdText = None        
+    else:
+        createdText = cmds.textCurves( f=inFont, t=inText )
+        allDescendants = cmds.listRelatives( createdText[0], ad=True)
+        for desc in allDescendants:
+            if 'curve' in desc and 'Shape' not in desc:
+                cmds.parent(desc,w=True)
+                shapeList.append(desc)
+
     for index, shape in enumerate(shapeList):
-        cmds.parent(shape,w=True)
         cmds.makeIdentity(shape, apply=True, t=1, r=1, s=1, n=0)
         if index == 0:
             parentGuide = shapeList[0]
             continue
-    
-        foundShape = cmds.listRelatives(shape, s=True) 
+        foundShape = cmds.listRelatives(shape, s=True)[0] 
         cmds.move(0,0,0,(shape+'.scalePivot'),(shape+'.rotatePivot'))
         cmds.parent(foundShape,parentGuide,add=True,s=True)
         cmds.delete(shape)
-    cmds.delete(createdText[0])
+    
+    if createdText:
+        cmds.delete(createdText)
     cmds.xform(shapeList[0], cp=True)    
     worldPosition = cmds.xform(shapeList[0], q=True, piv=True, ws=True)
     cmds.xform(shapeList[0], t=(-worldPosition[0],-worldPosition[1],-worldPosition[2]))
@@ -157,6 +167,76 @@ def _RemoveDuplicates( seq):
     noDuplicates = []
     [noDuplicates.append(i) for i in seq if not noDuplicates.count(i)]
     return noDuplicates
+
+
+
+def convertToIndexList(vertList):
+    indices = []
+    for i in vertList:
+        index = int(i[i.index("[") + 1: -1])
+        indices.append(index)
+    return indices
+
+def convertToCompList(indices, inMesh, comp="vtx"):
+    vertices = []
+    for i in list(indices):
+        vrt = "%s.%s[%s]" % (inMesh, comp, i)
+
+        vertices.append(vrt)
+    return vertices
+
+def convertToSeperateLoops(inFace):
+    myNode = inFace.split(".")[0]
+    allEdges = cmds.polyListComponentConversion(inFace, te=True)
+    edges = cmds.filterExpand(allEdges, sm=32, fp=1)
+    edgeSelection = []
+    curves = []
+    for edge in convertToIndexList(edges):
+        edgeList = cmds.polySelect(myNode, q=1, edgeLoopOrBorder=edge)
+        edgeList.sort()
+        e = list(set(edgeList))
+        if e in edgeSelection:
+            continue
+        edgeSelection.append(e)
+        borderEdges = convertToCompList(e, myNode, "e")
+        convertedVertices = cmds.polyListComponentConversion(borderEdges, tv=True)
+        verts = cmds.filterExpand(convertedVertices, sm=31, fp=1)
+        positions = [cmds.xform(vert, q=1, ws=1, t=1) for vert in verts]
+        positions += [positions[0]]
+        curves.append(cmds.curve(p=positions, d=1))
+    return curves
+
+def ByteToHex( byteStr ):
+    return ''.join( [ "%02X " % ord( x ) for x in byteStr ] ).strip()
+
+@dec_undo
+def createTypeToolWithNode(nodeName, font=None, style=None, text=None):
+    typeTool = cmds.createNode("type", n= nodeName)
+    typeTransform = cmds.createNode( 'transform', n='%sMesh#'%nodeName, skipSelect=True)
+    typeMesh = cmds.createNode( 'mesh', n='typeMeshShape#', p=typeTransform, skipSelect=True)
+    cmds.connectAttr( typeTool+'.outputMesh', typeMesh+'.inMesh' )
+    
+    if font is None:
+        font = "Arial"
+    if style is None:
+        style = "Regular"
+    
+    cmds.setAttr( typeTool+'.currentFont', font, type="string" )
+    cmds.setAttr( typeTool+'.currentStyle', style, type="string" )
+    
+    if text is None:
+        text = nodeName
+    cmds.setAttr(typeTool+".textInput",  ByteToHex( text ), type="string")
+    
+    faces = cmds.ls("%s.f[*]"%typeMesh, fl=1)
+    allCurves = []
+    for face in faces:
+        curves = convertToSeperateLoops(face)
+        allCurves.extend(curves)
+    
+    cmds.delete(typeTool, typeTransform)
+    return allCurves
+
 
 def GetControler(inputCurve, curveDirectory, isChecked):
     cmds.delete(inputCurve, ch=True)

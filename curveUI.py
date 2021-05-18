@@ -9,7 +9,7 @@ from curveCreator import mayaWidget
 from curveCreator import captureWindow
 from curveCreator import mayaUtils
 
-__VERSION__ = "3.0.20210509"
+__VERSION__ = "3.0.20210515"
 _DIR = os.path.dirname(__file__) 
 _CURVES = os.path.join(_DIR, 'Curves')
 
@@ -378,7 +378,7 @@ class ControlUI(mayaWidget.DockWidget):
 
         self._changeLanguage(self.settings.value("language","en"))
         # arialIndex = mayaUtils.getMayaFonts().index("Arial ")
-        self.fontCombo.setCurrentIndex(self.settings.value("font", 0))
+        self.fontCombo.setCurrentIndex(int(self.settings.value("font", 0)))
         
     def hideEvent(self, event):
         """ the hide event is something that is triggered at the same time as close,
