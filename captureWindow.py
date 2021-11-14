@@ -1,6 +1,7 @@
 from curveCreator.qt_util import *
 import tempfile, os
-from maya import cmds, OpenMaya, OpenMayaUI, mel
+from maya import cmds, OpenMayaUI
+
 
 class CaptureWindow(QDialog):
     def __init__(self, parent=None, path='test'):
@@ -24,7 +25,7 @@ class CaptureWindow(QDialog):
 
         self.__addViewport()
         self.SaveAndCloseButton.clicked.connect(self.__saveAndClose)
-        
+
     def __addViewport(self):
         self.cameraName = cmds.camera()[0]
         cmds.hide(self.cameraName)
@@ -38,12 +39,12 @@ class CaptureWindow(QDialog):
         cmds.viewFit(self.cameraName, all=True)
 
     def createSnapshot(self):
-        filePath  = os.path.join(tempfile.gettempdir(),'screenshot.png')
+        filePath = os.path.join(tempfile.gettempdir(), 'screenshot.png')
         if os.path.isdir(os.path.dirname(self.path)):
             filePath = self.path
         print(filePath)
         QPixmap.grabWindow(self.modelEditor.winId()).save(filePath)
-        self.__itemCreated =  filePath
+        self.__itemCreated = filePath
         return filePath
 
     def __saveAndClose(self, *args):
@@ -57,6 +58,7 @@ class CaptureWindow(QDialog):
     def hideEvent(self, event):
         QDialog.hideEvent(self, event)
         cmds.delete(self.cameraName)
+
 
 def testUI():
     window_name = 'captureWindowTest'
@@ -74,4 +76,3 @@ def testUI():
     window.exec_()
 
     return window
-

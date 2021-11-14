@@ -4,28 +4,29 @@ this file will handle everything to make sure that we have a correct package ins
 these functions should only be called from the MEL file
 and its only created because MEL is extremely limited
 """
-import os, shutil, datetime, tempfile, zipfile, warnings
+import os, shutil, datetime
 
 CURRENTFOLDER = os.path.dirname(__file__)
 
 from curveCreator.qt_util import *
 from maya import cmds
 
-__VERSION__ = "3.0.20210518"
+__VERSION__ = "3.0.20211014"
+
 
 class InstallWindow(QDialog):
-    def __init__(self, scriptDir, parent = None):
+    def __init__(self, scriptDir, parent=None):
         super(InstallWindow, self).__init__(parent)
 
-        self.setWindowTitle("install curve tools %s"%__VERSION__)
-        
+        self.setWindowTitle("install curve tools %s" % __VERSION__)
+
         self.__scriptDir = scriptDir
         self.__curveFile = os.path.normpath(os.path.join(self.__scriptDir, "curveCreator"))
-        self.__exists = os.path.exists(self.__curveFile )
-        self.__oldSettings =  os.path.normpath(os.path.join(self.__curveFile, "settings.ini"))
-        
+        self.__exists = os.path.exists(self.__curveFile)
+        self.__oldSettings = os.path.normpath(os.path.join(self.__curveFile, "settings.ini"))
+
         # ---- simple banner
-        self.setLayout(nullLayout(QVBoxLayout, size = 1))
+        self.setLayout(nullLayout(QVBoxLayout, size=1))
 
         lbl = toolButton(os.path.join(CURRENTFOLDER, "curveCreator", "icons", "TextCurve.png"))
         self.layout().addWidget(lbl)
@@ -60,7 +61,7 @@ class InstallWindow(QDialog):
 
         # ---- the installButtons
 
-        self.layout().addItem(QSpacerItem(2,2,QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.layout().addItem(QSpacerItem(2, 2, QSizePolicy.Minimum, QSizePolicy.Expanding))
         installBtn = pushButton("install curve tools")
         self.layout().addWidget(installBtn)
         self.progress = QProgressBar()
@@ -74,49 +75,49 @@ class InstallWindow(QDialog):
         infoEdit.setReadOnly(True)
         self.layout().addWidget(infoEdit)
 
-
         installBtn.clicked.connect(self.install)
 
     def _searchInstallLocation(self, *args):
-        fd = QFileDialog.getExistingDirectory(self, "choose install location", self.__scriptDir )
-        if fd is None or fd in ['',[]]:
+        fd = QFileDialog.getExistingDirectory(self, "choose install location", self.__scriptDir)
+        if fd is None or fd in ['', []]:
             return
         self.__scriptDir = fd
         self._installLine.setText(fd)
 
         self.__curveFile = os.path.normpath(os.path.join(self.__scriptDir, "curveCreator"))
-        self.__exists = os.path.exists(self.__curveFile )
+        self.__exists = os.path.exists(self.__curveFile)
         if self.__exists:
             self.cbx.show()
             self.oldSettings.show()
         else:
             self.cbx.hide()
             self.oldSettings.hide()
-        self.__oldSettings =  os.path.normpath(os.path.join(self.__curveFile, "settings.ini"))
-        
+        self.__oldSettings = os.path.normpath(os.path.join(self.__curveFile, "settings.ini"))
+
     def install(self):
         setProgress(0, self.progress, "start installing the curve tools")
         if self.__exists:
-            # ---- copy old settings file 
+            # ---- copy old settings file
             if os.path.exists(self.__oldSettings) and self.oldSettings.isChecked():
                 newIni = os.path.normpath(os.path.join(CURRENTFOLDER, "curveCreator/settings.ini"))
-                with open(newIni, "w") as fh: pass
+                with open(newIni, "w") as fh:
+                    pass
                 shutil.copy2(self.__oldSettings, newIni)
                 setProgress(10, self.progress, "copied old settings")
-            
+
             # ---- check what to do with previous version
             if self.cbx.currentIndex() == 1:
                 shutil.rmtree(self.__curveFile)
                 setProgress(30, self.progress, "removed original folder")
             else:
-                now = datetime.datetime.now( )
+                now = datetime.datetime.now()
                 versionDate = "%s%02d%02d" % (now.year, now.month, now.day)
-                backup = os.path.normpath(os.path.join(self.__scriptDir, "Backup_%s"%versionDate))
+                backup = os.path.normpath(os.path.join(self.__scriptDir, "Backup_%s" % versionDate))
                 if os.path.exists(backup):
-                    print("backup already created: %s"%backup)
+                    print("backup already created: %s" % backup)
                 else:
                     shutil.move(self.__curveFile, backup)
-                    setProgress(30, self.progress, "backed up folder as: Backup_%s"%versionDate)
+                    setProgress(30, self.progress, "backed up folder as: Backup_%s" % versionDate)
 
         setProgress(50, self.progress, "move curve tools")
         shutil.move(os.path.normpath(os.path.join(CURRENTFOLDER, "curveCreator")), os.path.normpath(os.path.join(self.__scriptDir, "curveCreator")))
@@ -126,15 +127,14 @@ class InstallWindow(QDialog):
 
         self.close()
 
-def doFunction(useLocalMayaFolder = True):
+
+def doFunction(useLocalMayaFolder=True):
     """use this function to gather all the data necessary that is to be moved"""
     currentMaya = cmds.about(v=1)
     if useLocalMayaFolder:
-        scriptDir =  cmds.internalVar(userScriptDir=1) #< move to a local path in maya for testing purposes
+        scriptDir = cmds.internalVar(userScriptDir=1)  # < move to a local path in maya for testing purposes
     else:
-        scriptDir =  cmds.internalVar(userScriptDir=1).replace("%s/"%currentMaya, "")
-    
-    myWindow = InstallWindow(scriptDir,  parent = get_maya_window())
-    myWindow.exec_()
+        scriptDir = cmds.internalVar(userScriptDir=1).replace("%s/" % currentMaya, "")
 
-    
+    myWindow = InstallWindow(scriptDir, parent=get_maya_window())
+    myWindow.exec_()
