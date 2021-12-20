@@ -1,9 +1,8 @@
 from curveCreator.py23 import *
 from curveCreator.qt_util import *
 
-import os, re, stat, shutil, platform, logging, tempfile, glob, warnings, webbrowser
+import os, glob, warnings, webbrowser
 from functools import partial
-from maya import cmds
 
 from curveCreator import mayaWidget
 from curveCreator import captureWindow
