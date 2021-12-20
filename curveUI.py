@@ -9,8 +9,8 @@ from curveCreator import mayaWidget
 from curveCreator import captureWindow
 from curveCreator import mayaUtils
 
-__VERSION__ = "3.0.20210518"
-_DIR = os.path.dirname(__file__) 
+__VERSION__ = "3.0.20211220"
+_DIR = os.path.dirname(__file__)
 _CURVES = os.path.join(_DIR, 'Curves')
 
 class ControlUI(mayaWidget.DockWidget):
@@ -30,7 +30,7 @@ class ControlUI(mayaWidget.DockWidget):
         self.setLayout(mainLayout)
 
         self.__menuSetup()
-        
+
         self.__header()
         self.__displayTypes()
         self.__saveAndText()
@@ -46,7 +46,7 @@ class ControlUI(mayaWidget.DockWidget):
         self.colorList = mayaUtils.INDEXCOLORS
 
     # --------------------------------- translation ----------------------------------
-    def translate(self, localeDict = {}):
+    def translate(self, localeDict={}):
         for key, value in localeDict.items():
             if isinstance(self.textInfo[key], QLineEdit):
                 self.textInfo[key].setPlaceholderText(value)
@@ -54,7 +54,7 @@ class ControlUI(mayaWidget.DockWidget):
                 self.textInfo[key].setTitle(value)
             else:
                 self.textInfo[key].setText(value)
-        
+
     def getButtonText(self):
         """ convenience function to get the current items that need new locale text
         """
@@ -72,10 +72,10 @@ class ControlUI(mayaWidget.DockWidget):
         """ seperate function that calls upon the translate widget to help create a new language
         """
         from SkinningTools.UI import translator
-        _dict = loadLanguageFile("en", self.toolName) 
-        _trs = translator.showUI(_dict, widgetName = self.toolName)
-    
-    def _changeLanguage(self, lang = None):
+        _dict = loadLanguageFile("en", self.toolName)
+        _trs = translator.showUI(_dict, widgetName=self.toolName)
+
+    def _changeLanguage(self, lang=None):
         """ change the ui language
 
         :param lang: the shortname of the language to change the ui to
@@ -88,13 +88,13 @@ class ControlUI(mayaWidget.DockWidget):
         _dict = loadLanguageFile(lang, "curveCreator")
         self.translate(_dict)
 
-    # --------------------------------- ui setup ----------------------------------  
+    # --------------------------------- ui setup ----------------------------------
 
     def __uiElements(self):
         """ several general UI elements that should be visible most of the times
         also loads the settings necessary for storing and retrieving information
         """
-        _ini = os.path.join(_DIR,'settings.ini')
+        _ini = os.path.join(_DIR, 'settings.ini')
         self.settings = QSettings(_ini, QSettings.IniFormat)
 
     def __menuSetup(self):
@@ -108,7 +108,6 @@ class ControlUI(mayaWidget.DockWidget):
         helpAction.setIcon(QIcon(":/QR_help.png"))
 
         self.textInfo["docAction"] = QAction("UI documentation", self)
-        
 
         self.changeLN = QMenu("en", self)
         languageFiles = os.listdir(os.path.join(_DIR, "languages"))
@@ -118,19 +117,19 @@ class ControlUI(mayaWidget.DockWidget):
             ac.triggered.connect(self._changeLanguage)
 
         helpAction.triggered.connect(self._openDocHelp)
-        
+
         self.menuBar.addAction(helpAction)
         self.menuBar.addMenu(self.changeLN)
         self.layout().setMenuBar(self.menuBar)
-        
+
     def __header(self):
         headerLayout = nullLayout(QHBoxLayout, None, 0)
         headerLayout.addItem(QSpacerItem(2, 2, QSizePolicy.Expanding, QSizePolicy.Minimum))
-        headerButton = toolButton("{0}/icons/TextCurve.png".format(_DIR),0, QSize(87, 40))
+        headerButton = toolButton("{0}/icons/TextCurve.png".format(_DIR), 0, QSize(87, 40))
         headerLayout.addWidget(headerButton)
         headerLayout.addItem(QSpacerItem(2, 2, QSizePolicy.Expanding, QSizePolicy.Minimum))
         self.layout().addLayout(headerLayout)
-    
+
     def __displayTypes(self):
         self.textInfo["displayTitle"] = QGroupBox("Display")
         groupBLayout = nullLayout(QVBoxLayout, None, 0)
@@ -153,11 +152,11 @@ class ControlUI(mayaWidget.DockWidget):
         grid = nullLayout(QGridLayout, None, 0)
         indexTab.setLayout(grid)
         for index, color in enumerate(self.colorList):
-            row = int(index/8.0)
+            row = int(index / 8.0)
             _btn = QPushButton()
             _btn.clicked.connect(partial(mayaUtils.setIndexColor, index))
-            _btn.setStyleSheet("background-color:rgb({0},{1},{2})".format(color[0]*255, color[1]*255, color[2]*255));
-            grid.addWidget(_btn, row, index - (8*row))
+            _btn.setStyleSheet("background-color:rgb({0},{1},{2})".format(color[0] * 255, color[1] * 255, color[2] * 255));
+            grid.addWidget(_btn, row, index - (8 * row))
         grid.addItem(QSpacerItem(2, 2, QSizePolicy.Minimum, QSizePolicy.Expanding), 4, 0)
         box = nullLayout(QVBoxLayout, None, 0)
         rgbTab.setLayout(box)
@@ -184,10 +183,10 @@ class ControlUI(mayaWidget.DockWidget):
         checkLay = nullLayout(QHBoxLayout, None, 0)
         self.textInfo["useControlCheck"] = QCheckBox("Use curve name")
         self.textInfo["centerCheck"] = QCheckBox("re-center the curve")
-        for ck in [self.textInfo["useControlCheck"],self.textInfo["centerCheck"]]:
+        for ck in [self.textInfo["useControlCheck"], self.textInfo["centerCheck"]]:
             checkLay.addWidget(ck)
         saveLay.addLayout(checkLay)
-        self.textInfo["controlName"] = LineEdit() 
+        self.textInfo["controlName"] = LineEdit()
         self.textInfo["controlName"].setPlaceholderText("Give name to control...")
         def setEnabled(state): self.textInfo["controlName"].setEnabled(not state)
         self.textInfo["useControlCheck"].stateChanged.connect(setEnabled)
@@ -201,7 +200,7 @@ class ControlUI(mayaWidget.DockWidget):
         self.textInfo["saveGB"].setLayout(saveLay)
 
         textLay = nullLayout(QVBoxLayout, None, 0)
-        self.textInfo["textInput"] = LineEdit(folderSpecific = False)
+        self.textInfo["textInput"] = LineEdit(folderSpecific=False)
         self.textInfo["textInput"].setPlaceholderText("Create text Controller...")
         self.fontCombo = QFontComboBox()
         self.fontCombo.setCurrentFont(QFont("Arial"))
@@ -221,7 +220,7 @@ class ControlUI(mayaWidget.DockWidget):
         self.controlTree = QTreeWidget()
         self.controlTree.setHeaderHidden(True)
         self.controlTree.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.controlTree.setIconSize(QSize(30,30))
+        self.controlTree.setIconSize(QSize(30, 30))
         self.controlTree.setIndentation(2)
         self.controlTree.itemSelectionChanged.connect(self.__handleChanged)
         self.controlTree.itemDoubleClicked.connect(self.__doubleClicked)
@@ -234,29 +233,28 @@ class ControlUI(mayaWidget.DockWidget):
         self.textInfo["deleteBtn"] = buttonsToAttach("delete", self._deletecontroller)
         for btn in [self.iconButton, self.textInfo["combineBtn"], self.textInfo["deleteBtn"]]:
             vbox.addWidget(btn)
-        
+
         box.addLayout(vbox)
         self.textInfo["loadGB"].setLayout(box)
 
         self.__readOutFiles()
-            
+
     def setRgbColor(self, picker):
         r, g, b, f = picker.currentColor().getRgbF()
         mayaUtils.setRgbColor(r, g, b, f)
-        
+
     def _openDocHelp(self):
-        
+
         _helpFile = os.path.join(_DIR, "languages/{}/helpDoc.pdf".format(self.changeLN.title()))
         try:
-            os.startfile( r'file:%s'%_helpFile )  
+            os.startfile(r'file:%s' % _helpFile)
         except:
             try:
                 warnings.warn("could not open Pdf file, trying through webrowser!")
-                webbrowser.open_new( r'file:%s'%_helpFile )  
+                webbrowser.open_new(r'file:%s' % _helpFile)
             except Exception as e:
                 warnings.warn(e)
 
-    
     def __imageCreationWindow(self, *args):
         selection = mayaUtils.getSelection()
         if len(selection) == 0:
@@ -282,14 +280,14 @@ class ControlUI(mayaWidget.DockWidget):
 
                 self.__readOutFiles()
 
-    def __readOutFiles(self,*args):
+    def __readOutFiles(self, *args):
         self.controlTree.clear()
 
         files = glob.glob(os.path.join(_CURVES, "*.py"))
         listing = []
         for file in files:
             listing.append(os.path.basename(file))
-                
+
         for infile in listing:
             if not '.py' in infile:
                 continue
@@ -298,14 +296,14 @@ class ControlUI(mayaWidget.DockWidget):
             f = open(os.path.join(_CURVES, infile), "r")
             text = f.read()
 
-            item    = QTreeWidgetItem()
+            item = QTreeWidgetItem()
             item.setText(0, str(file[0]))
             try:
-                icon = QIcon(os.path.join(_CURVES, "{0}.png".format(file[0]) ) )
+                icon = QIcon(os.path.join(_CURVES, "{0}.png".format(file[0])))
                 item.setIcon(0, icon)
             except Exception as e:
                 pass
-            self.controlTree.addTopLevelItem(item)  
+            self.controlTree.addTopLevelItem(item)
 
     def __handleChanged(self):
         getItem = self.controlTree.selectedItems()
@@ -313,7 +311,7 @@ class ControlUI(mayaWidget.DockWidget):
             return
         inObject = getItem[0].text(0)
         try:
-            icon = QPixmap(os.path.join(_CURVES, "{0}.png".format(inObject) ) )
+            icon = QPixmap(os.path.join(_CURVES, "{0}.png".format(inObject)))
             self.iconButton.setPixmap(icon)
         except Exception as e:
             pass
@@ -322,15 +320,15 @@ class ControlUI(mayaWidget.DockWidget):
         getItem = self.controlTree.selectedItems()
         if getItem == []:
             return
-        
+
         inObject = getItem[0].text(0)
-        f = open(os.path.join(_CURVES, "{0}.py".format(inObject) ), "r")
+        f = open(os.path.join(_CURVES, "{0}.py".format(inObject)), "r")
         text = f.read()
-        exec (text)
+        exec(text)
 
     def _deletecontroller(self, *args):
         getItem = self.controlTree.selectedItems()
-        
+
         if not getItem == []:
             inObject = getItem[0].text(0)
             for ext in ["png", "py"]:
@@ -338,17 +336,16 @@ class ControlUI(mayaWidget.DockWidget):
                     os.remove(os.path.join(_CURVES, '{0}.{1}'.format(inObject, ext)))
                 except Exception as e:
                     pass
-            
+
         self.__readOutFiles()
 
     def __createText(self, textEdit):
         InputText = textEdit.text()
-        FontType  = self.fontCombo.currentText()
+        FontType = self.fontCombo.currentText()
         if str(InputText) == "":
             raise ValueError("no text given!")
         else:
-            mayaUtils.createTextController(str(InputText),str(FontType))
-
+            mayaUtils.createTextController(str(InputText), str(FontType))
 
     def saveUIState(self):
         """ save the current state of the ui in a seperate ini file, this should also hold information later from a seperate settings window
@@ -361,8 +358,6 @@ class ControlUI(mayaWidget.DockWidget):
         self.settings.setValue("language", self.changeLN.title())
         self.settings.setValue("font", self.fontCombo.currentIndex())
 
-
-        
     def loadUIState(self):
         """ load the previous set information from the ini file where possible, if the ini file is not there it will start with default settings
         """
@@ -376,17 +371,17 @@ class ControlUI(mayaWidget.DockWidget):
             _tab = 1
         self.colorTab.setCurrentIndex(_tab)
 
-        self._changeLanguage(self.settings.value("language","en"))
+        self._changeLanguage(self.settings.value("language", "en"))
         # arialIndex = mayaUtils.getMayaFonts().index("Arial ")
-        self.fontCombo.setCurrentIndex(int(self.settings.value("font", 0)))
-        
+        self.fontCombo.setCurrentIndex(int(self.settings.value("font", 0)) or 0) #< weird hack necessary for osx otherwise it returns None
+
     def hideEvent(self, event):
         """ the hide event is something that is triggered at the same time as close,
         sometimes the close event is not handled correctly by maya so we add the save state in here to make sure its always triggered
         :note: its only storing info so it doesnt break anything
         """
         self.saveUIState()
-        
+
         if not event is None:
             super(ControlUI, self).hideEvent(event)
 
@@ -400,12 +395,13 @@ class ControlUI(mayaWidget.DockWidget):
         self.deleteLater()
         return True
 
+
 def showUI(newPlacement=False):
     """ convenience function to show the current user interface in maya,
 
     :param newPlacement: if `True` will force the tool to not read the ini file, if `False` will open the tool as intended
     :type newPlacement: bool
     """
-    dock = ControlUI(newPlacement, parent = None)
+    dock = ControlUI(newPlacement, parent=None)
     dock.run()
     return dock

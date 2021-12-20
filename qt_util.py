@@ -37,7 +37,7 @@ except Exception as e:
             from PyQt4.QtSvg import *
             from PyQt4 import QtGui
             from PyQt4.QtUiTools import *
-            import  shiboken
+            import shiboken
 
             QT_VERSION = "pyqt4"
         except Exception as e:
@@ -49,6 +49,7 @@ if QT_VERSION == "none":
 
 
 nameRegExp = QRegExp('\\w+')
+
 
 def wrapinstance(ptr, base=None):
     '''workaround to be able to wrap objects with both PySide and PyQt4'''
@@ -75,6 +76,7 @@ def wrapinstance(ptr, base=None):
     else:
         return None
 
+
 def get_maya_window():
     for widget in QApplication.allWidgets():
         try:
@@ -93,7 +95,7 @@ def nullLayout(inType, parent=None, size=0):
 
 def QuickDialog(title):
     """ convenience Quick dialog for simple accept and reject functions
-    
+
     :param title: title for the dialog
     :type title: string
     :return: the window to be created
@@ -112,9 +114,10 @@ def QuickDialog(title):
     h.addWidget(btn)
     return myWindow
 
+
 def pushButton(text=''):
     """ simple button command with correct stylesheet
-    
+
     :param text: text to add to the button
     :type text: string
     :return: the button  
@@ -124,9 +127,10 @@ def pushButton(text=''):
     btn.setStyleSheet("background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 #595959, stop:1 #444444);")
     return btn
 
+
 def buttonsToAttach(name, command, *_):
     """ convenience function to attach signal command to qpushbutton on creation
-    
+
     :param name: text to add to the button
     :type name: string
     :param command: python command to attach to the current button on clicked signal
@@ -144,9 +148,9 @@ def buttonsToAttach(name, command, *_):
     return button
 
 
-def svgButton(name='', pixmap='', size=None, toolTipInfo = None):
+def svgButton(name='', pixmap='', size=None, toolTipInfo=None):
     """ toolbutton function with image from svg file
-    
+
     :param name: text to add to the button
     :type name: string
     :param pixmap: location of the svg file
@@ -179,7 +183,7 @@ def svgButton(name='', pixmap='', size=None, toolTipInfo = None):
 
 def toolButton(pixmap='', orientation=0, size=None):
     """ toolbutton function with image
-    
+
     :param pixmap: location of the image
     :type pixmap: string
     :param orientation: rotation in degrees clockwise
@@ -207,6 +211,7 @@ def toolButton(pixmap='', orientation=0, size=None):
             btn.setIconSize(size)
     return btn
 
+
 def loadLanguageFile(language, widgetName):
     """ load the language file based on given inputs
 
@@ -220,17 +225,18 @@ def loadLanguageFile(language, widgetName):
     languagesDir = os.path.join(UIDIRECTORY, "languages")
     curLangDir = os.path.join(languagesDir, language)
     if not os.path.exists(curLangDir):
-        print("no language (%s) folder found for widget <%s>!"%(language, widgetName))
+        print("no language (%s) folder found for widget <%s>!" % (language, widgetName))
         return False
 
-    widgetLanguageFile = os.path.join(curLangDir, "%s.LAN"%widgetName)
+    widgetLanguageFile = os.path.join(curLangDir, "%s.LAN" % widgetName)
     if not os.path.exists(widgetLanguageFile):
-        print("no language (%s) file found for widget <%s>!"%(language, widgetName))
+        print("no language (%s) file found for widget <%s>!" % (language, widgetName))
         return False
 
     with open(widgetLanguageFile) as f:
         _data = json.load(f)
     return _data
+
 
 def FalseFolderCharacters(inString):
     """ checking a string for characters that are not allowed in folder structures
@@ -253,6 +259,7 @@ def FalseFolderCharactersJapanese(self, inString):
     """
     return re.search(r'[\\/:\[\]<>"!@#$%^&-]', inString) or re.search(r'[*?|]', inString) or "." in inString or (len(inString) > 0 and inString[0].isdigit()) or re.search(u'[\u4E00-\u9FFF]+', inString, re.U) or re.search(u'[\u3040-\u309Fー]+', inString, re.U) or re.search(u'[\u30A0-\u30FF]+', inString, re.U)
 
+
 def setProgress(inValue, progressBar=None, inText=''):
     """ convenience function to set the progress bar value even when a qProgressbar does not exist
 
@@ -273,17 +280,18 @@ def setProgress(inValue, progressBar=None, inText=''):
     progressBar.setValue(inValue)
     QApplication.processEvents()
 
+
 class LineEdit(QLineEdit):
     """override the focus steal on the lineedit"""
     allowText = pyqtSignal(bool)
 
-    def __init__(self, folderSpecific = True, *args):
+    def __init__(self, folderSpecific=True, *args):
         super(LineEdit, self).__init__(*args)
         self.__qt_normal_color = QPalette(self.palette()).color(QPalette.Base)
 
         if folderSpecific:
             self.textChanged[unicode].connect(self._checkString)
-        
+
     def __lineEdit_Color(self, inColor):
         PalleteColor = QPalette(self.palette())
         PalleteColor.setColor(QPalette.Base, QColor(inColor))
@@ -309,9 +317,9 @@ class LineEdit(QLineEdit):
 class ColorPicker(QColorDialog):
     def __init__(self, *args):
         super(ColorPicker, self).__init__(*args)
-        widgets = self.findChildren(QWidget)
-
         self.setOptions(QColorDialog.NoButtons | QColorDialog.DontUseNativeDialog)
+
+        widgets = self.findChildren(QWidget)
 
         mainLayout = self.layout()
         hboxLayout = nullLayout(QHBoxLayout, None, 0)
@@ -322,6 +330,5 @@ class ColorPicker(QColorDialog):
         vboxLayout.addWidget(widgets[2])
         hboxLayout.addWidget(widgets[7])
 
-        for i in [0,1,3,4,5,6]:
+        for i in [0, 1, 3, 4, 5, 6]:
             widgets[i].hide()
-        
