@@ -27,22 +27,23 @@ class CaptureWindow(QDialog):
         self.SaveAndCloseButton.clicked.connect(self.__saveAndClose)
 
     def __addViewport(self):
+        item = cmds.ls(sl=1)
         self.cameraName = cmds.camera()[0]
         cmds.hide(self.cameraName)
 
-        self.modelPanelName = cmds.modelEditor(camera=self.cameraName, displayAppearance='smoothShaded', dtx=0, hud=0, alo=0, nc=1, grid=0)
+        self.modelPanelName = cmds.modelEditor(camera=self.cameraName, displayAppearance='smoothShaded', dtx=0, hud=0, nc=1, grid=0)
 
         ptr = OpenMayaUI.MQtUtil.findControl(self.modelPanelName)
         self.modelEditor = wrapinstance(long(ptr))
         self.viewportLayout.addWidget(self.modelEditor)
-
-        cmds.viewFit(self.cameraName, all=True)
+        cmds.select(item, r=1)
+        cmds.viewFit(self.cameraName, noc=True)
 
     def createSnapshot(self):
         filePath = os.path.join(tempfile.gettempdir(), 'screenshot.png')
         if os.path.isdir(os.path.dirname(self.path)):
             filePath = self.path
-        print(filePath)
+
         QPixmap.grabWindow(self.modelEditor.winId()).save(filePath)
         self.__itemCreated = filePath
         return filePath

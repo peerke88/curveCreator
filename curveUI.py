@@ -292,15 +292,15 @@ class ControlUI(mayaWidget.DockWidget):
                 continue
             file = infile.split('.')
 
-            f = open(os.path.join(_CURVES, infile), "r")
-            text = f.read()
+            # f = open(os.path.join(_CURVES, infile), "r")
+            # text = f.read()
 
             item = QTreeWidgetItem()
             item.setText(0, str(file[0]))
             try:
                 icon = QIcon(os.path.join(_CURVES, "{0}.png".format(file[0])))
                 item.setIcon(0, icon)
-            except Exception as e:
+            except:
                 pass
             self.controlTree.addTopLevelItem(item)
 
@@ -312,7 +312,7 @@ class ControlUI(mayaWidget.DockWidget):
         try:
             icon = QPixmap(os.path.join(_CURVES, "{0}.png".format(inObject)))
             self.iconButton.setPixmap(icon)
-        except Exception as e:
+        except:
             pass
 
     def __doubleClicked(self):
@@ -333,7 +333,7 @@ class ControlUI(mayaWidget.DockWidget):
             for ext in ["png", "py"]:
                 try:
                     os.remove(os.path.join(_CURVES, '{0}.{1}'.format(inObject, ext)))
-                except Exception as e:
+                except:
                     pass
 
         self.__readOutFiles()
@@ -372,7 +372,7 @@ class ControlUI(mayaWidget.DockWidget):
 
         self._changeLanguage(self.settings.value("language", "en"))
         # arialIndex = mayaUtils.getMayaFonts().index("Arial ")
-        self.fontCombo.setCurrentIndex(int(self.settings.value("font", 0)) or 0) #< weird hack necessary for osx otherwise it returns None
+        self.fontCombo.setCurrentIndex(int(self.settings.value("font", 0)) or 0)  # < weird hack necessary for osx otherwise it returns None
 
     def hideEvent(self, event):
         """ the hide event is something that is triggered at the same time as close,
