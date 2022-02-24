@@ -31,10 +31,9 @@ class CaptureWindow(QDialog):
         self.cameraName = cmds.camera()[0]
         cmds.hide(self.cameraName)
 
-        self.modelPanelName = cmds.modelEditor(camera=self.cameraName, displayAppearance='smoothShaded', dtx=0, hud=0, nc=1, grid=0)
-
-        ptr = OpenMayaUI.MQtUtil.findControl(self.modelPanelName)
-        self.modelEditor = wrapinstance(long(ptr))
+        cmds.formLayout()  # added in order to remove cannot find control error
+        self.modelPanelName = cmds.modelEditor(camera=self.cameraName, displayAppearance='smoothShaded', dtx=0, hud=0, alo=0, nc=1, grid=0)
+        self.modelEditor = toQtObject(self.modelPanelName)
         self.viewportLayout.addWidget(self.modelEditor)
         cmds.select(item, r=1)
         cmds.viewFit(self.cameraName, noc=True)

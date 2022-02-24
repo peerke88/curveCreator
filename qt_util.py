@@ -77,6 +77,17 @@ def wrapinstance(ptr, base=None):
         return None
 
 
+def toQtObject(mayaName):
+    from maya import OpenMayaUI
+    ptr = OpenMayaUI.MQtUtil.findControl(mayaName)
+    if ptr is None:
+        ptr = OpenMayaUI.MQtUtil.findLayout(mayaName)
+    if ptr is None:
+        ptr = OpenMayaUI.MQtUtil.findMenuItem(mayaName)
+    if ptr is not None:
+        return wrap_instance(ptr)
+
+
 def get_maya_window():
     for widget in QApplication.allWidgets():
         try:
