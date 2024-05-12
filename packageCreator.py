@@ -11,7 +11,7 @@ from shutil import copy2, rmtree
 
 curFolder = os.path.normpath(os.path.dirname(__file__))
 baseFolder = os.path.normpath(os.path.join(curFolder, "package"))
-_versionNumber = "3.0"
+_versionNumber = "3.1"
 
 
 def setVersionDate():

@@ -43,7 +43,11 @@ class CaptureWindow(QDialog):
         if os.path.isdir(os.path.dirname(self.path)):
             filePath = self.path
 
-        QPixmap.grabWindow(self.modelEditor.winId()).save(filePath)
+        if not QT_VERSION == "pyside6":
+            QPixmap.grabWindow(self.modelEditor.winId()).save(filePath)
+        else:
+            QScreen.grabWindow(QApplication.primaryScreen(), self.modelEditor.winId()).save(filePath)
+
         self.__itemCreated = filePath
         return filePath
 

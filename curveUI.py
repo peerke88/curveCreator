@@ -8,7 +8,7 @@ from curveCreator import mayaWidget
 from curveCreator import captureWindow
 from curveCreator import mayaUtils
 
-__VERSION__ = "3.0.20211220"
+__VERSION__ = "3.1.20240512"
 _DIR = os.path.dirname(__file__)
 _CURVES = os.path.join(_DIR, 'Curves')
 
