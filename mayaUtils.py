@@ -1,7 +1,8 @@
 from maya import cmds, mel
-import os, stat, sys, traceback, warnings, platform
+import os, stat, sys, traceback, warnings, platform, json
 from functools import wraps
-
+from maya.api import OpenMaya
+from math import degrees, radians
 
 def getPluginSuffix():
     """ get the current plugin suffix based on the os that we are running
@@ -204,6 +205,45 @@ def convertToIndexList(vertList):
     return indices
 
 
+def getSelectedNodes():
+    selection = cmds.ls(sl=1)
+    curves = []
+    for sel in selection:
+        shapes = cmds.listRelatives(selection, s=1) or []
+        
+        if not shapes:
+            continue
+        for shape in shapes:
+            if cmds.objectType(shapes[0]) == "nurbsCurve":
+                if sel in curves:
+                    continue
+                curves.append(sel)
+    return curves
+
+def getSize(isRelative = False):
+    controlSizeData = {}
+    controls = getSelectedNodes()
+    for ctrl in controls:
+        if not cmds.objExists("{0}.size".format(ctrl)):
+            cmds.addAttr(ctrl, ln="size", dt="string", keyable=0)
+            cmds.setAttr("{0}.size".format(ctrl), json.dumps([cmds.xform(cv, q=1, ws=0, t=1) for cv in cmds.ls("{0}.cv[*]".format(ctrl), fl=1)]), type="string")
+
+        data = cmds.getAttr("{0}.size".format(ctrl))
+        if isRelative:
+            data = [cmds.xform(cv, q=1, ws=0, t=1) for cv in cmds.ls("{0}.cv[*]".format(ctrl), fl=1)]
+        else:
+            data = json.loads(data)
+        controlSizeData[ctrl] = data
+    return controlSizeData
+
+def setSize(curVal, controlSizeData):
+    controls = getSelectedNodes()
+    for ctrl in controls:
+        for idx, cv in  enumerate([cv for cv in cmds.ls("{0}.cv[*]".format(ctrl), fl=1)]):
+            pos =  OpenMaya.MVector(controlSizeData[ctrl][idx]) * curVal
+            cmds.xform(cv, ws=0, t=pos)
+
+
 def convertToCompList(indices, inMesh, comp="vtx"):
     vertices = []
     for i in list(indices):
@@ -213,6 +253,46 @@ def convertToCompList(indices, inMesh, comp="vtx"):
     return vertices
 
 
+def addBaseSize(createdNodes):
+    for trs in cmds.ls(createdNodes, type="transform"):
+        cmds.addAttr(trs, ln="size", dt= "string", keyable=0)
+        cmds.setAttr("{0}.size".format(trs), json.dumps([cmds.xform(cv, q=1, ws=0, t=1) for cv in cmds.ls(f"{trs}.cv[*]", fl=1)]), type="string")
+
+def getAxis(matrix, index):
+    i = index * 4
+    return OpenMaya.MVector(matrix[i], matrix[i + 1], matrix[i + 2])
+
+@dec_undo
+def rotateAll(axis, amount):
+    allNodes = getSelectedNodes()
+    for node in allNodes:
+        cvs = [cv for cv in cmds.ls("{0}.cv[*]".format(node), fl=1)]
+        mm = cmds.getAttr("{0}.matrix".format(node))
+        m = OpenMaya.MMatrix(mm)
+        
+        scale = [getAxis(m, 0).length(), getAxis(m, 1).length(), getAxis(m, 2).length()]
+        rx, ry, rz, ro = OpenMaya.MTransformationMatrix(m).rotationComponents(asQuaternion=False)
+        rotation = [degrees(rx), degrees(ry), degrees(rz)]
+        rotation[axis] += amount
+        
+        e = OpenMaya.MEulerRotation([radians(r) for r in rotation])
+        nm = e.asMatrix()
+        nM = []
+        for index, ax in enumerate(scale):
+            nM.append((getAxis(nm, index) * ax))
+        nM.append([m[12], m[13], m[14]])
+        
+        _NM = OpenMaya.MMatrix()
+        for i, vector in enumerate(nM):
+            for j in range(3):
+                _NM.setElement(i, j, vector[j])
+        
+        for cv in cvs:
+            pos =  OpenMaya.MPoint(cmds.xform(cv, q=1, ws=0, t=1))
+            npos = pos * _NM
+            cmds.xform(cv, ws=0, t=OpenMaya.MVector(npos))
+
+    
 def convertToSeperateLoops(inFace):
     myNode = inFace.split(".")[0]
     allEdges = cmds.polyListComponentConversion(inFace, te=True)

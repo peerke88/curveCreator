@@ -1,12 +1,14 @@
 from curveCreator.py23 import *
 from curveCreator.qt_util import *
 
-import os, glob, warnings, webbrowser
+import os, glob, warnings, webbrowser, json, re
 from functools import partial
+from maya import cmds
 
 from curveCreator import mayaWidget
 from curveCreator import captureWindow
 from curveCreator import mayaUtils
+from curveCreator.controlSlider.sliderControl import SliderControl
 
 __VERSION__ = "3.1.20240512"
 _DIR = os.path.dirname(__file__)
@@ -32,6 +34,7 @@ class ControlUI(mayaWidget.DockWidget):
 
         self.__header()
         self.__displayTypes()
+        self.__modControls()
         self.__saveAndText()
         self.__loadControllers()
 
@@ -43,6 +46,7 @@ class ControlUI(mayaWidget.DockWidget):
         self.textInfo = {}
         mayaUtils.setToolTips(True)
         self.colorList = mayaUtils.INDEXCOLORS
+        self.controlSizeData = {}
 
     # --------------------------------- translation ----------------------------------
     def translate(self, localeDict={}):
@@ -160,7 +164,7 @@ class ControlUI(mayaWidget.DockWidget):
         box = nullLayout(QVBoxLayout, None, 0)
         rgbTab.setLayout(box)
         colorPicker = ColorPicker()
-        # colorPicker.setOptions(QColorDialog.NoButtons | QColorDialog.DontUseNativeDialog)
+        
         box.addWidget(colorPicker)
         self.textInfo["assignColor"] = buttonsToAttach("Assign Color", partial(self.setRgbColor, colorPicker))
         box.addWidget(self.textInfo["assignColor"])
@@ -168,6 +172,65 @@ class ControlUI(mayaWidget.DockWidget):
         groupBLayout.addWidget(self.colorTab)
 
         self.layout().addWidget(self.textInfo["displayTitle"])
+
+
+    def __modControls(self):
+        layout = nullLayout(QVBoxLayout, None, 0)
+        self.layout().addLayout(layout)
+
+        self.textInfo["size"] = QGroupBox("Size")
+        self.textInfo["orient"] = QGroupBox("Orientation")
+
+        for gb in [self.textInfo["size"], self.textInfo["orient"]]:
+            layout.addWidget(gb)
+        self.textInfo["size"].setLayout(nullLayout(QHBoxLayout, None, 0))
+        self.textInfo["orient"].setLayout(nullLayout(QVBoxLayout, None, 0))
+
+        self.slider = SliderControl("controlSize", label="controlSize", mn=0.0, mx=2.0, rigidRange=False, labelOnSlider=False)
+        self.slider.slider.setValue(1.0)
+        self.relativeCheck = QCheckBox("use relative scale")
+        self.textInfo["size"].layout().addWidget(self.slider)
+        self.textInfo["size"].layout().addWidget(self.relativeCheck)
+
+
+        h1 = nullLayout(QHBoxLayout, None, 0)
+        h1.addStretch()
+        h1.addWidget(QLabel("degrees:"))
+        self.degreeSpin = QSpinBox()
+        self.degreeSpin.setValue(45)
+        self.degreeSpin.setRange(1, 180)
+        h1.addWidget(self.degreeSpin)
+        self.textInfo["orient"].layout().addLayout(h1)
+
+        layouts = []
+        self.degreeButtons = []
+        for i, ax in enumerate("XYZ"):
+            _l = nullLayout(QHBoxLayout, None, 0)
+            b1 = buttonsToAttach(f"rotate{ax} -45", partial(self._rotateShape, i, True))
+            _l.addWidget(b1)
+            b2=buttonsToAttach(f"rotate{ax} 45", partial(self._rotateShape, i, False))
+            _l.addWidget(b2)
+            self.degreeButtons.extend([b1, b2])
+
+            self.textInfo["orient"].layout().addLayout(_l)
+
+        self.slider.startScrub.connect(self.sliderPressed)
+        self.slider.slider.valueChanged.connect(self.sliderMoved)
+        self.slider.endScrub.connect(self.sliderReleased)
+        self.relativeCheck.stateChanged.connect(self.resetSlider)
+        self.degreeSpin.valueChanged.connect(self.updateDegreeButtons)
+
+    def updateDegreeButtons(self, value):
+        for button in self.degreeButtons:
+            t = button.text()
+            number = re.findall(r'\d+', t)
+            button.setText(t.replace(number[0], str(value)))
+
+    def _rotateShape(self, i, isNegative=False):
+        value = self.degreeSpin.value()
+        if isNegative:
+            value *= -1
+        mayaUtils.rotateAll(i, value)
 
     def __saveAndText(self):
         layout = nullLayout(QHBoxLayout, None, 0)
@@ -203,9 +266,7 @@ class ControlUI(mayaWidget.DockWidget):
         self.textInfo["textInput"].setPlaceholderText("Create text Controller...")
         self.fontCombo = QFontComboBox()
         self.fontCombo.setCurrentFont(QFont("Arial"))
-        # allFonts = mayaUtils.getMayaFonts()
-        # self.fontCombo.addItems(allFonts)
-        # self.fontCombo.setCurrentIndex(allFonts.index("Arial "))
+
         self.textInfo["textBtn"] = buttonsToAttach("Create Text", partial(self.__createText, self.textInfo["textInput"]))
         for btn in [self.textInfo["textInput"], self.fontCombo, self.textInfo["textBtn"]]:
             textLay.addWidget(btn)
@@ -241,6 +302,35 @@ class ControlUI(mayaWidget.DockWidget):
     def setRgbColor(self, picker):
         r, g, b, f = picker.currentColor().getRgbF()
         mayaUtils.setRgbColor(r, g, b, f)
+
+    def sliderPressed(self):
+        cmds.undoInfo(openChunk=True, chunkName='controlSizeChange')
+        try:
+            self.controlSizeData = mayaUtils.getSize(self.relativeCheck.isChecked())
+            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData)
+        except Exception as e:
+            warnings.warn(f"sliderPressed: {e}")
+
+    def sliderMoved(self):
+        try:
+            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData)
+        except Exception as e:
+            warnings.warn(f"sliderMoved: {e}")
+
+    def sliderReleased(self):
+        try:
+            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData)
+        except Exception as e:
+            warnings.warn(f"sliderReleased: {e}")
+        self.resetSlider()
+        self.controlSizeDat = {}
+        cmds.undoInfo(closeChunk=True, chunkName='controlSizeChange')
+
+    def resetSlider(self):
+        if self.relativeCheck.isChecked():
+            self.slider.slider.valueChanged.disconnect(self.sliderMoved)
+            self.slider.slider.setValue(1)
+            self.slider.slider.valueChanged.connect(self.sliderMoved)
 
     def _openDocHelp(self):
 
@@ -292,9 +382,6 @@ class ControlUI(mayaWidget.DockWidget):
                 continue
             file = infile.split('.')
 
-            # f = open(os.path.join(_CURVES, infile), "r")
-            # text = f.read()
-
             item = QTreeWidgetItem()
             item.setText(0, str(file[0]))
             try:
@@ -323,7 +410,12 @@ class ControlUI(mayaWidget.DockWidget):
         inObject = getItem[0].text(0)
         f = open(os.path.join(_CURVES, "{0}.py".format(inObject)), "r")
         text = f.read()
+        nodesBeforeCreation = cmds.ls(sl=0)
         exec(text)
+        nodesAfterCreation = cmds.ls(sl=0)
+        createdNodes = list(set(nodesAfterCreation) - set(nodesBeforeCreation))
+        mayaUtils.addBaseSize(createdNodes)
+
 
     def _deletecontroller(self, *args):
         getItem = self.controlTree.selectedItems()
