@@ -1,7 +1,14 @@
+"""
+todo:
+insead of just vector manipulation for scale, lets add a second attribute
+this is a matrix, which multiplies the vector positions, so scale, rotate but also translate are supported
+and it will always be accessible to go back to default!
+"""
+
 from curveCreator.py23 import *
 from curveCreator.qt_util import *
 
-import os, glob, warnings, webbrowser, json, re
+import os, glob, warnings, webbrowser, json, re, traceback
 from functools import partial
 from maya import cmds
 
@@ -306,22 +313,22 @@ class ControlUI(mayaWidget.DockWidget):
     def sliderPressed(self):
         cmds.undoInfo(openChunk=True, chunkName='controlSizeChange')
         try:
-            self.controlSizeData = mayaUtils.getSize(self.relativeCheck.isChecked())
-            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData)
+            self.controlSizeData = mayaUtils.getSize()
+            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData, self.relativeCheck.isChecked())
         except Exception as e:
-            warnings.warn(f"sliderPressed: {e}")
+            warnings.warn("sliderPressed: {0} \n {1}".format(e, traceback.format_exc()))
 
     def sliderMoved(self):
         try:
-            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData)
+            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData, self.relativeCheck.isChecked())
         except Exception as e:
-            warnings.warn(f"sliderMoved: {e}")
+            warnings.warn("sliderMoved: {0} \n {1}".format(e, traceback.format_exc()))
 
     def sliderReleased(self):
         try:
-            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData)
+            mayaUtils.setSize(self.slider.slider.value(), self.controlSizeData, self.relativeCheck.isChecked())
         except Exception as e:
-            warnings.warn(f"sliderReleased: {e}")
+            warnings.warn("sliderReleased: {0} \n {1}".format(e, traceback.format_exc()))
         self.resetSlider()
         self.controlSizeDat = {}
         cmds.undoInfo(closeChunk=True, chunkName='controlSizeChange')

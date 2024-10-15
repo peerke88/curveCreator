@@ -220,28 +220,42 @@ def getSelectedNodes():
                 curves.append(sel)
     return curves
 
-def getSize(isRelative = False):
+def getSize():
     controlSizeData = {}
     controls = getSelectedNodes()
     for ctrl in controls:
         if not cmds.objExists("{0}.size".format(ctrl)):
             cmds.addAttr(ctrl, ln="size", dt="string", keyable=0)
+            cmds.addAttr(ctrl, ln="ctrlMatrix", dt="matrix", keyable=0)
             cmds.setAttr("{0}.size".format(ctrl), json.dumps([cmds.xform(cv, q=1, ws=0, t=1) for cv in cmds.ls("{0}.cv[*]".format(ctrl), fl=1)]), type="string")
 
-        data = cmds.getAttr("{0}.size".format(ctrl))
-        if isRelative:
-            data = [cmds.xform(cv, q=1, ws=0, t=1) for cv in cmds.ls("{0}.cv[*]".format(ctrl), fl=1)]
-        else:
-            data = json.loads(data)
+        mm = cmds.getAttr("{0}.ctrlMatrix".format(ctrl)) or [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+
+        m = OpenMaya.MMatrix(mm)
+
+        data = [json.loads(cmds.getAttr("{0}.size".format(ctrl))), m]
         controlSizeData[ctrl] = data
     return controlSizeData
 
-def setSize(curVal, controlSizeData):
+def setSize(curVal, controlSizeData, isRelative=False):
     controls = getSelectedNodes()
     for ctrl in controls:
+        m = controlSizeData[ctrl][1]
+        scale = [1,1,1] if not isRelative else [getAxis(m, 0).length(), getAxis(m, 1).length(), getAxis(m, 2).length()]
+        nM = []
+        for index, ax in enumerate(scale):
+            nM.append((getAxis(m, index).normal() * (curVal*ax)))
+        nM.append([m[12], m[13], m[14]])
+        _NM = OpenMaya.MMatrix()
+        for i, vector in enumerate(nM):
+            for j in range(3):
+                _NM.setElement(i, j, vector[j])
+
+        cmds.setAttr("{0}.ctrlMatrix".format(ctrl), _NM, type="matrix")
         for idx, cv in  enumerate([cv for cv in cmds.ls("{0}.cv[*]".format(ctrl), fl=1)]):
-            pos =  OpenMaya.MVector(controlSizeData[ctrl][idx]) * curVal
-            cmds.xform(cv, ws=0, t=pos)
+            pos =  OpenMaya.MPoint(controlSizeData[ctrl][0][idx])
+            npos = pos * _NM
+            cmds.xform(cv, ws=0, t=OpenMaya.MVector(npos))
 
 
 def convertToCompList(indices, inMesh, comp="vtx"):
@@ -257,6 +271,7 @@ def addBaseSize(createdNodes):
     for trs in cmds.ls(createdNodes, type="transform"):
         cmds.addAttr(trs, ln="size", dt= "string", keyable=0)
         cmds.setAttr("{0}.size".format(trs), json.dumps([cmds.xform(cv, q=1, ws=0, t=1) for cv in cmds.ls(f"{trs}.cv[*]", fl=1)]), type="string")
+        cmds.addAttr(trs, ln="ctrlMatrix", dt="matrix", keyable=0)
 
 def getAxis(matrix, index):
     i = index * 4
@@ -265,9 +280,10 @@ def getAxis(matrix, index):
 @dec_undo
 def rotateAll(axis, amount):
     allNodes = getSelectedNodes()
+    controlSizeData = getSize()
     for node in allNodes:
-        cvs = [cv for cv in cmds.ls("{0}.cv[*]".format(node), fl=1)]
-        mm = cmds.getAttr("{0}.matrix".format(node))
+        
+        mm = controlSizeData[node][1]
         m = OpenMaya.MMatrix(mm)
         
         scale = [getAxis(m, 0).length(), getAxis(m, 1).length(), getAxis(m, 2).length()]
@@ -287,8 +303,9 @@ def rotateAll(axis, amount):
             for j in range(3):
                 _NM.setElement(i, j, vector[j])
         
-        for cv in cvs:
-            pos =  OpenMaya.MPoint(cmds.xform(cv, q=1, ws=0, t=1))
+        cmds.setAttr("{0}.ctrlMatrix".format(node), _NM, type="matrix")
+        for idx, cv in  enumerate([cv for cv in cmds.ls("{0}.cv[*]".format(node), fl=1)]):
+            pos =  OpenMaya.MPoint(controlSizeData[node][0][idx])
             npos = pos * _NM
             cmds.xform(cv, ws=0, t=OpenMaya.MVector(npos))
 
