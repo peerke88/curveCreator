@@ -17,7 +17,7 @@ from curveCreator import captureWindow
 from curveCreator import mayaUtils
 from curveCreator.controlSlider.sliderControl import SliderControl
 
-__VERSION__ = "3.1.20240512"
+__VERSION__ = "3.2.20241216"
 _DIR = os.path.dirname(__file__)
 _CURVES = os.path.join(_DIR, 'Curves')
 
